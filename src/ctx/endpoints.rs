@@ -30,20 +30,39 @@ pub struct EndPointCacheEntry<T> {
 }
 
 /// A collection of API endpoints that each cache requests made to them
+#[derive(Default)]
 pub struct EndPoints {
-    
+    pub teams: TeamsEndPoint,
+    pub team: TeamEndPoint,
 }
 
 /// Structure representing requests made to the /teams endpoint
+#[derive(Default)]
 pub struct TeamsEndPoint {
     /// Representing the /teams/{page_num} endpoint
-    full_page: TeamPageEP,
-    /// Represents the /teams/{page_num}/simpl endpoint
-    simple_page: SimpleTeamPageEP,
+    pub(crate) full_page: TeamPageEP,
+    /// Represents the /teams/{page_num}/simple endpoint
+    pub(crate) simple_page: SimpleTeamPageEP,
+    /// Represents /teams/{page_num}/keys
+    pub(crate) key_page: KeysTeamPageEP,
+    /// Represents /teams/{year}/{page_num}
+    pub(crate) team_by_year: TeamPageByYearEP,
+    /// Represents /teams/{year}/{page_num}/simple
+    pub(crate) simple_team_by_year: SimpleTeamPageEP,
+    /// Represents /teams/{year}/{page_num}/keys
+    pub(crate) keys_by_year: KeysTeamPageByYearEP,
+}
+
+/// Container with all /team/ endpoints
+#[derive(Default)]
+pub struct TeamEndPoint {
+    /// Represents /team/{team_key}
+    pub(crate) team: TeamEP,
 }
 
 macro_rules! endpoint {
     ($name:ident: ($($params:ty),+) => $val:ty where ($($names:ident),+) $path:literal) => {
+        #[derive(::std::default::Default)]
         struct $name { cache: Cache<($($params),+,), EndPointCacheEntry<$val>> }
         #[async_trait]
         impl self::EndPoint for $name {
@@ -64,14 +83,18 @@ macro_rules! endpoint {
 }
 
 endpoint!{TeamPageEP: (usize) => Arc<Vec<Team>> where (page_num) "teams/{page_num}"}
-endpoint!{SimpleTeamPageEP: (usize) => Arc<Vec<SimpleTeam>> where (page_num) "teams/{page_num}"}
-endpoint!{KeysTeamPageEP: (usize) => Arc<Vec<TeamKey>> where (page_num) "teams/{page_num}"}
+endpoint!{SimpleTeamPageEP: (usize) => Arc<Vec<SimpleTeam>> where (page_num) "teams/{page_num}/simple"}
+endpoint!{KeysTeamPageEP: (usize) => Arc<Vec<TeamKey>> where (page_num) "teams/{page_num}/keys"}
 endpoint!{TeamPageByYearEP: (Year, usize) => Arc<Vec<Team>> where (year, page_num) "teams/{year}/{page_num}"}
 endpoint!{SimpleTeamPageByYearEP: (Year, usize) => Arc<Vec<SimpleTeam>> where (year, page_num) "teams/{year}/{page_num}/simple"}
 endpoint!{KeysTeamPageByYearEP: (Year, usize) => Arc<Vec<TeamKey>> where (year, page_num) "teams/{year}/{page_num}/keys"}
 endpoint!{
     EventStatusByYearEP: (TeamKey, Year) => Arc<HashMap<EventKey, TeamEventStatus>>
     where (team_key, year) "team/{team_key}/events/{year}/statuses"
+}
+endpoint!{
+    TeamEP: (TeamKey) => Arc<Team>
+    where (team_key) "team/{team_key}"
 }
 
 

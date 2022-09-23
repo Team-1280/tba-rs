@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-
+use async_trait::async_trait;
 use serde::Deserialize;
 
 use crate::{ctx::Context, Error};
@@ -11,8 +11,9 @@ pub struct TeamNumber(u32);
 
 /// Trait required by all types that are referenced by [Key]s in the TBA API, with a single method
 /// to upgrade the key into the object it references
+#[async_trait]
 pub trait KeyReferenced: Sized {
-    fn dereference(key: Key<Self>, ctx: &Context) -> Result<Self, Error>;
+    async fn dereference(key: Key<Self>, ctx: &Context) -> Result<Self, Error>;
 }
 
 /// A key that references an element of type [T]

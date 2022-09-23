@@ -6,12 +6,15 @@ use reqwest::{Client, ClientBuilder, header::HeaderMap};
 
 use crate::Error;
 
+use self::endpoints::EndPoints;
+
 
 
 /// Context for interacting with the API, containing all state needed to make requests over the
 /// internet
 pub struct Context {
     pub(crate) client: Client,
+    pub(crate) endpoints: EndPoints,
 }
 
 impl Context {
@@ -30,6 +33,7 @@ impl Context {
                 .default_headers(headers)
                 .connect_timeout(Duration::from_secs(30))
                 .build()?,
+            endpoints: Default::default(),
         })
     }
 }

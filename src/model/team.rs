@@ -1,7 +1,9 @@
 use reqwest::Url;
 use serde::Deserialize;
+use async_trait::async_trait;
+use crate::ctx::endpoints::EndPoint;
 
-use super::{id::{TeamNumber, Key}, Year};
+use super::{id::{TeamNumber, Key, KeyReferenced}, Year};
 
 pub type TeamKey = Key<Team>;
 pub type RobotKey = Key<TeamRobot>;
@@ -36,7 +38,6 @@ pub struct Team {
     home_championship: HomeChampionshipsList,
 }
 
-
 /// A newtype containing a map of year numbers to the location of a home championship
 #[derive(Clone, Debug,)]
 pub struct HomeChampionshipsList(
@@ -51,6 +52,18 @@ pub struct TeamRobot {
     pub robot_name: String,
     pub key: RobotKey,
     pub team_key: TeamKey,
+}
+
+#[async_trait]
+impl KeyReferenced for Team {
+    async fn dereference(key: Key<Self>, ctx: &crate::ctx::Context) -> Result<Self, crate::Error> {
+        ctx
+            .endpoints
+            .team 
+            .team
+            .get((key,), ctx)
+            .await
+    } 
 }
 
 impl AsRef<SimpleTeam> for Team {
