@@ -32,7 +32,7 @@ pub struct Team {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct HomeChampionshipsList(Vec<u16, String>);
+pub struct HomeChampionshipsList(Vec<(u16, String)>);
 
 impl AsRef<SimpleTeam> for Team {
     fn as_ref(&self) -> &SimpleTeam {
