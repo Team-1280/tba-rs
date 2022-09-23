@@ -3,7 +3,7 @@ use moka::sync::Cache;
 use once_cell::sync::Lazy;
 use reqwest::{RequestBuilder, Request, Method, Url, header::{IF_NONE_MATCH, ETAG}, StatusCode};
 use serde::{Deserialize, de::DeserializeOwned};
-use crate::{Error, model::team::Team};
+use crate::{Error, model::team::{Team, SimpleTeam}};
 use std::sync::{Arc, Weak};
 use async_trait::async_trait;
 
@@ -19,7 +19,7 @@ pub trait EndPoint: Sized {
     type Value;
     
     /// Make a request to the API endpoint represented by `self` with the given parameters
-    async fn get(&mut self, params: Self::Params, ctx: &Context) -> Result<Self::Value, Error>;
+    async fn get(&self, params: Self::Params, ctx: &Context) -> Result<Self::Value, Error>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -40,9 +40,47 @@ pub struct TeamsEndPoint {
     full_page: FullPageEP,
 }
 
-pub struct FullPageEP {
+/// Endpoint representing the /teams/{page_num}/simpl endpoint
+pub struct TeamPageEP {
     cache: Cache<usize, EndPointCacheEntry<Arc<Vec<Team>>>>
 }
+
+pub struct SimpleTeamPageEP {
+    cache: Cache<usize, EndPointCacheEntry<Arc<Vec<SimpleTeam>>>>,
+}
+
+#[async_trait]
+impl EndPoint for SimpleTeamPageEP {
+    type Params = usize;
+    type Value = Arc<Vec<SimpleTeam>>;
+    
+    async fn get(&self, params: Self::Params, ctx: &Context) -> Result<Self::Value, Error> {
+        let path = format!("teams/{}/simple", params);
+        get_ep::<Self>(
+            path,
+            params,
+            &self.cache,
+            ctx
+        ).await
+    }
+}
+
+#[async_trait]
+impl EndPoint for TeamPageEP {
+    type Params = usize;
+    type Value = Arc<Vec<Team>>;
+
+    async fn get(&self, params: Self::Params, ctx: &Context) -> Result<Self::Value, Error> {
+        let path = format!("teams/{}", params);
+        get_ep::<Self>(
+            path,
+            params,
+            &self.cache,
+            ctx
+        ).await
+    }
+}
+
 
 /// Get the given path from the given endpoint, utilizing the cache
 async fn get_ep<T: EndPoint + 'static>(
@@ -87,18 +125,4 @@ where
     }
 }
 
-#[async_trait]
-impl EndPoint for FullPageEP {
-    type Params = usize;
-    type Value = Arc<Vec<Team>>;
 
-    async fn get(&mut self, params: Self::Params, ctx: &Context) -> Result<Self::Value, Error> {
-        let path = format!("teams/{}", params);
-        get_ep::<Self>(
-            path,
-            params,
-            &self.cache,
-            ctx
-        ).await
-    }
-}
