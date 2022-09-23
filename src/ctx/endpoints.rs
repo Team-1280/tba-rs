@@ -3,8 +3,8 @@ use moka::sync::Cache;
 use once_cell::sync::Lazy;
 use reqwest::{RequestBuilder, Request, Method, Url, header::{IF_NONE_MATCH, ETAG}, StatusCode};
 use serde::{Deserialize, de::DeserializeOwned};
-use crate::{Error, model::team::{Team, SimpleTeam}};
-use std::sync::{Arc, Weak};
+use crate::{Error, model::{team::{Team, SimpleTeam, TeamKey}, Year, event::{EventKey, TeamEventStatus}}};
+use std::{sync::{Arc, Weak}, collections::HashMap};
 use async_trait::async_trait;
 
 use super::Context;
@@ -37,48 +37,41 @@ pub struct EndPoints {
 /// Structure representing requests made to the /teams endpoint
 pub struct TeamsEndPoint {
     /// Representing the /teams/{page_num} endpoint
-    full_page: FullPageEP,
+    full_page: TeamPageEP,
+    /// Represents the /teams/{page_num}/simpl endpoint
+    simple_page: SimpleTeamPageEP,
 }
 
-/// Endpoint representing the /teams/{page_num}/simpl endpoint
-pub struct TeamPageEP {
-    cache: Cache<usize, EndPointCacheEntry<Arc<Vec<Team>>>>
+macro_rules! endpoint {
+    ($name:ident: ($($params:ty),+) => $val:ty where ($($names:ident),+) $path:literal) => {
+        struct $name { cache: Cache<($($params),+,), EndPointCacheEntry<$val>> }
+        #[async_trait]
+        impl self::EndPoint for $name {
+            type Params = ($($params),+,);
+            type Value = $val;
+            async fn get(&self, params: ($($params),+,), ctx: &Context) -> ::std::result::Result<Self::Value, Error> {
+                let ($($names),+,) = params;
+                let path = ::std::format!($path);
+                get_ep::<Self>(
+                    path,
+                    params,
+                    &self.cache,
+                    ctx
+                ).await
+            }
+        }
+    };
 }
 
-pub struct SimpleTeamPageEP {
-    cache: Cache<usize, EndPointCacheEntry<Arc<Vec<SimpleTeam>>>>,
-}
-
-#[async_trait]
-impl EndPoint for SimpleTeamPageEP {
-    type Params = usize;
-    type Value = Arc<Vec<SimpleTeam>>;
-    
-    async fn get(&self, params: Self::Params, ctx: &Context) -> Result<Self::Value, Error> {
-        let path = format!("teams/{}/simple", params);
-        get_ep::<Self>(
-            path,
-            params,
-            &self.cache,
-            ctx
-        ).await
-    }
-}
-
-#[async_trait]
-impl EndPoint for TeamPageEP {
-    type Params = usize;
-    type Value = Arc<Vec<Team>>;
-
-    async fn get(&self, params: Self::Params, ctx: &Context) -> Result<Self::Value, Error> {
-        let path = format!("teams/{}", params);
-        get_ep::<Self>(
-            path,
-            params,
-            &self.cache,
-            ctx
-        ).await
-    }
+endpoint!{TeamPageEP: (usize) => Arc<Vec<Team>> where (page_num) "teams/{page_num}"}
+endpoint!{SimpleTeamPageEP: (usize) => Arc<Vec<SimpleTeam>> where (page_num) "teams/{page_num}"}
+endpoint!{KeysTeamPageEP: (usize) => Arc<Vec<TeamKey>> where (page_num) "teams/{page_num}"}
+endpoint!{TeamPageByYearEP: (Year, usize) => Arc<Vec<Team>> where (year, page_num) "teams/{year}/{page_num}"}
+endpoint!{SimpleTeamPageByYearEP: (Year, usize) => Arc<Vec<SimpleTeam>> where (year, page_num) "teams/{year}/{page_num}/simple"}
+endpoint!{KeysTeamPageByYearEP: (Year, usize) => Arc<Vec<TeamKey>> where (year, page_num) "teams/{year}/{page_num}/keys"}
+endpoint!{
+    EventStatusByYearEP: (TeamKey, Year) => Arc<HashMap<EventKey, TeamEventStatus>>
+    where (team_key, year) "team/{team_key}/events/{year}/statuses"
 }
 
 

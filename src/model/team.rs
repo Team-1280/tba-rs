@@ -1,18 +1,10 @@
 use reqwest::Url;
 use serde::Deserialize;
 
-use super::{id::TeamNumber, Year};
+use super::{id::{TeamNumber, Key}, Year};
 
-/// A newtype over a [String] that references a [Team] in the TBA API
-#[derive(Clone, PartialEq, Eq, Deserialize, Debug)]
-#[serde(transparent)]
-pub struct TeamKey(String);
-
-
-/// A newtype over a [String] that references a [TeamRobot] in the TBA API
-#[derive(Clone, PartialEq, Eq, Deserialize, Debug)]
-#[serde(transparent)]
-pub struct RobotKey(String);
+pub type TeamKey = Key<Team>;
+pub type RobotKey = Key<TeamRobot>;
 
 /// Structure representing basic data about an FRC team, that can be upgraded using a
 /// [Context](crate::ctx::Context)

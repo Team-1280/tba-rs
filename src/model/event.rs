@@ -10,3 +10,7 @@ pub struct SimpleEvent {
 pub struct Event {
 
 }
+
+pub struct TeamEventStatus {
+
+}
