@@ -24,6 +24,7 @@ pub struct SimpleTeam {
 /// A team object containing more data than a [SimpleTeam]
 #[derive(Clone, Deserialize, Debug)]
 pub struct Team {
+    #[serde(flatten)]
     pub simple: SimpleTeam,
     pub address: Option<String>,
     pub postal_code: Option<String>,

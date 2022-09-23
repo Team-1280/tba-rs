@@ -3,6 +3,7 @@ use crate::{ctx::Context, Error};
 use super::{id::{Key, KeyReferenced}, Year};
 use async_trait::async_trait;
 use chrono::{Date, NaiveDate};
+use reqwest::Url;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
 
@@ -50,8 +51,59 @@ pub struct DistrictList {
     pub year: Year,
 }
 
+#[derive(Clone, Debug, Deserialize,)]
 pub struct Event {
-    simple: SimpleEvent,
+    #[serde(flatten)]
+    pub simple: SimpleEvent,
+    pub short_name: Option<String>,
+    pub event_type_string: String,
+    pub week: Option<u32>,
+    pub address: Option<String>,
+    pub postal_code: Option<String>,
+    pub gmaps_place_id: Option<String>,
+    pub gmaps_url: Option<Url>,
+    pub lat: Option<f64>,
+    pub lng: Option<f64>,
+    pub location_name: Option<String>,
+    pub timezone: Option<String>,
+    pub website: Option<Url>,
+    pub first_event_id: Option<String>,
+    pub first_event_code: Option<String>,
+
+}
+
+#[derive(Clone, Debug)]
+pub enum WebCastType {
+    Youtube,
+    Twitch,
+    Ustream,
+    Iframe,
+    Html5,
+    Rtmp,
+    Livestream,
+    DirectLink,
+    Mms,
+    Justin,
+    Stemtv,
+    Dacast,
+}
+
+pub enum PlayoffType {
+
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct WebCast {
+    #[serde(rename="type")]
+    pub type_: WebCastType,
+    pub channel: String,
+    #[serde(deserialize_with="super::deserialize_yyyymmdd")]
+    pub date: Option<NaiveDate>,
+    pub file: Option<String>,
+    pub division_keys: Option<Vec<EventKey>>,
+    pub parent_event_key: Option<EventKey>,
+    pub playoff_type: Option<PlayoffType>,
+    pub playoff_type_string: Option<String>,
 }
 
 pub struct TeamEventStatus {
