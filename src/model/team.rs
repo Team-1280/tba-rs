@@ -1,5 +1,5 @@
 use reqwest::Url;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 
 use super::id::TeamNumber;
 
@@ -31,8 +31,12 @@ pub struct Team {
     home_championship: HomeChampionshipsList,
 }
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct HomeChampionshipsList(Vec<(u16, String)>);
+
+/// A newtype containing a map of year numbers to the location of a home championship
+#[derive(Clone, Debug,)]
+pub struct HomeChampionshipsList(
+    Vec<(u16, String)>
+);
 
 impl AsRef<SimpleTeam> for Team {
     fn as_ref(&self) -> &SimpleTeam {
@@ -42,5 +46,33 @@ impl AsRef<SimpleTeam> for Team {
 impl AsMut<SimpleTeam> for Team {
     fn as_mut(&mut self) -> &mut SimpleTeam {
         &mut self.simple
+    }
+}
+
+impl<'de> Deserialize<'de> for HomeChampionshipsList {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de> {
+        use serde::de::Visitor;
+        struct MapVisitor;
+        impl<'de> Visitor<'de> for MapVisitor {
+            type Value = HomeChampionshipsList;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(formatter, "Map of year numbers to home championship locations")    
+            }
+
+            fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
+                where
+                    A: serde::de::MapAccess<'de>, {
+                let mut list = Vec::with_capacity(map.size_hint().unwrap_or(5));
+                while let Some((k, v)) = map.next_entry()? {
+                    list.push((k, v))
+                }
+
+                Ok(HomeChampionshipsList(list))
+            }
+        }
+
+        deserializer.deserialize_map(MapVisitor)
     }
 }
