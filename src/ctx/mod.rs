@@ -1,8 +1,11 @@
+pub mod endpoints;
+
 use std::time::Duration;
 
 use reqwest::{Client, ClientBuilder, header::HeaderMap};
 
 use crate::Error;
+
 
 
 /// Context for interacting with the API, containing all state needed to make requests over the
