@@ -1,12 +1,24 @@
 use reqwest::Url;
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 
-use super::id::TeamNumber;
+use super::{id::TeamNumber, Year};
+
+/// A newtype over a [String] that references a [Team] in the TBA API
+#[derive(Clone, PartialEq, Eq, Deserialize, Debug)]
+#[serde(transparent)]
+pub struct TeamKey(String);
 
 
-#[derive(Clone, Deserialize)]
+/// A newtype over a [String] that references a [TeamRobot] in the TBA API
+#[derive(Clone, PartialEq, Eq, Deserialize, Debug)]
+#[serde(transparent)]
+pub struct RobotKey(String);
+
+/// Structure representing basic data about an FRC team, that can be upgraded using a
+/// [Context](crate::ctx::Context)
+#[derive(Clone, Deserialize, Debug)]
 pub struct SimpleTeam {
-    pub key: String,
+    pub key: TeamKey,
     pub team_number: TeamNumber,
     pub nickame: Option<String>,
     pub name: String,
@@ -15,7 +27,8 @@ pub struct SimpleTeam {
     pub country: Option<String>,
 }
 
-#[derive(Clone, Deserialize)]
+/// A team object containing more data than a [SimpleTeam]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Team {
     simple: SimpleTeam,
     address: Option<String>,
@@ -26,7 +39,7 @@ pub struct Team {
     lng: Option<f64>,
     location_name: Option<String>,
     website: Option<Url>,
-    rookie_year: Option<u16>,
+    rookie_year: Option<Year>,
     motto: Option<String>,
     home_championship: HomeChampionshipsList,
 }
@@ -37,6 +50,16 @@ pub struct Team {
 pub struct HomeChampionshipsList(
     Vec<(u16, String)>
 );
+
+/// A robot that competed in a given [Year] with name and a [TeamKey] referencing the team that
+/// created this robot
+#[derive(Clone, Debug, Deserialize)]
+pub struct TeamRobot {
+    pub year: Year,
+    pub robot_name: String,
+    pub key: RobotKey,
+    pub team_key: TeamKey,
+}
 
 impl AsRef<SimpleTeam> for Team {
     fn as_ref(&self) -> &SimpleTeam {
