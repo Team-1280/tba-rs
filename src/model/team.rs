@@ -24,18 +24,18 @@ pub struct SimpleTeam {
 /// A team object containing more data than a [SimpleTeam]
 #[derive(Clone, Deserialize, Debug)]
 pub struct Team {
-    simple: SimpleTeam,
-    address: Option<String>,
-    postal_code: Option<String>,
-    gmaps_place_id: Option<String>,
-    gmaps_url: Option<Url>,
-    lat: Option<f64>,
-    lng: Option<f64>,
-    location_name: Option<String>,
-    website: Option<Url>,
-    rookie_year: Option<Year>,
-    motto: Option<String>,
-    home_championship: HomeChampionshipsList,
+    pub simple: SimpleTeam,
+    pub address: Option<String>,
+    pub postal_code: Option<String>,
+    pub gmaps_place_id: Option<String>,
+    pub gmaps_url: Option<Url>,
+    pub lat: Option<f64>,
+    pub lng: Option<f64>,
+    pub location_name: Option<String>,
+    pub website: Option<Url>,
+    pub rookie_year: Option<Year>,
+    pub motto: Option<String>,
+    pub home_championship: HomeChampionshipsList,
 }
 
 /// A newtype containing a map of year numbers to the location of a home championship
