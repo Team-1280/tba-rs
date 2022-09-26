@@ -3,7 +3,7 @@ use moka::sync::Cache;
 use once_cell::sync::Lazy;
 use reqwest::{RequestBuilder, Request, Method, Url, header::{IF_NONE_MATCH, ETAG}, StatusCode};
 use serde::{Deserialize, de::DeserializeOwned};
-use crate::{Error, model::{team::{Team, SimpleTeam, TeamKey}, Year, event::{EventKey, TeamEventStatus}}};
+use crate::{Error, model::{team::{Team, SimpleTeam, TeamKey}, Year, event::{EventKey, TeamEventStatus, Event}}};
 use std::{sync::{Arc, Weak}, collections::HashMap};
 use async_trait::async_trait;
 
@@ -34,6 +34,7 @@ pub struct EndPointCacheEntry<T> {
 pub struct EndPoints {
     pub teams: TeamsEndPoint,
     pub team: TeamEndPoint,
+    pub event: EventEndPoint,
 }
 
 /// Structure representing requests made to the /teams endpoint
@@ -60,16 +61,22 @@ pub struct TeamEndPoint {
     pub(crate) team: TeamEP,
 }
 
+/// Container with all /event/ endpoints modelled
+#[derive(Default)]
+pub struct EventEndPoint {
+    /// Represents the /event/{event_key} endpoint
+    pub(crate) event: EventEP, 
+}
+
 macro_rules! endpoint {
     ($name:ident: ($($params:ty),+) => $val:ty where ($($names:ident),+) $path:literal) => {
-        #[derive(::std::default::Default)]
-        struct $name { cache: Cache<($($params),+,), EndPointCacheEntry<$val>> }
+        pub struct $name { cache: Cache<($($params),+,), EndPointCacheEntry<$val>> }
         #[async_trait]
         impl self::EndPoint for $name {
             type Params = ($($params),+,);
             type Value = $val;
             async fn get(&self, params: ($($params),+,), ctx: &Context) -> ::std::result::Result<Self::Value, Error> {
-                let ($($names),+,) = params;
+                let ($(ref $names),+,) = params;
                 let path = ::std::format!($path);
                 get_ep::<Self>(
                     path,
@@ -77,6 +84,12 @@ macro_rules! endpoint {
                     &self.cache,
                     ctx
                 ).await
+            }
+        }
+
+        impl ::std::default::Default for $name {
+            fn default() -> Self {
+                Self { cache: Cache::new(10_000 / ::std::mem::size_of::<($($params),+,)>() as u64) }
             }
         }
     };
@@ -96,6 +109,7 @@ endpoint!{
     TeamEP: (TeamKey) => Arc<Team>
     where (team_key) "team/{team_key}"
 }
+endpoint!{EventEP: (EventKey) => Arc<Event> where (event_key) "event/{event_key}"}
 
 
 /// Get the given path from the given endpoint, utilizing the cache
@@ -140,5 +154,3 @@ where
         (code, _) => Err(Error::BadResponse(code)),
     }
 }
-
-

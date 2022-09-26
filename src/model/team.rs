@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use reqwest::Url;
 use serde::Deserialize;
 use async_trait::async_trait;
@@ -57,7 +59,7 @@ pub struct TeamRobot {
 
 #[async_trait]
 impl KeyReferenced for Team {
-    async fn dereference(key: Key<Self>, ctx: &crate::ctx::Context) -> Result<Self, crate::Error> {
+    async fn dereference(key: Key<Self>, ctx: &crate::ctx::Context) -> Result<Arc<Self>, crate::Error> {
         ctx
             .endpoints
             .team 
@@ -90,7 +92,7 @@ impl<'de> Deserialize<'de> for HomeChampionshipsList {
                 write!(formatter, "Map of year numbers to home championship locations")    
             }
 
-            fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
                 where
                     A: serde::de::MapAccess<'de>, {
                 let mut list = Vec::with_capacity(map.size_hint().unwrap_or(5));

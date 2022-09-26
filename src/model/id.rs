@@ -1,7 +1,6 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 use async_trait::async_trait;
 use serde::Deserialize;
-
 use crate::{ctx::Context, Error};
 
 /// A team number that uniquely identifies an FRC [Team](super::team::Team)
@@ -13,11 +12,11 @@ pub struct TeamNumber(u32);
 /// to upgrade the key into the object it references
 #[async_trait]
 pub trait KeyReferenced: Sized {
-    async fn dereference(key: Key<Self>, ctx: &Context) -> Result<Self, Error>;
+    async fn dereference(key: Key<Self>, ctx: &Context) -> Result<Arc<Self>, Error>;
 }
 
 /// A key that references an element of type [T]
-pub struct Key<T: KeyReferenced> {
+pub struct Key<T> {
     key: String,
     boo: PhantomData<T>,
 }
@@ -40,23 +39,35 @@ impl AsRef<u32> for TeamNumber {
     }
 }
 
-impl<T: KeyReferenced> Clone for Key<T> {
+impl<T> Clone for Key<T> {
     fn clone(&self) -> Self {
         Self { key: self.key.clone(), boo: PhantomData }
     }
 }
-impl<T: KeyReferenced> std::fmt::Debug for Key<T> {
+impl<T> std::fmt::Debug for Key<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.key.fmt(f)
     }
 }
-impl<T: KeyReferenced> std::fmt::Display for Key<T> {
+impl<T> std::fmt::Display for Key<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.key.fmt(f)
     }
 }
 
-impl<'de, T: KeyReferenced> Deserialize<'de> for Key<T> {
+impl<T> std::cmp::PartialEq for Key<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.key.eq(&other.key)
+    }
+}
+impl<T> std::cmp::Eq for Key<T> {}
+impl<T> std::hash::Hash for Key<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.key.hash(state)
+    }
+}
+
+impl<'de, T> Deserialize<'de> for Key<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: serde::Deserializer<'de> {
