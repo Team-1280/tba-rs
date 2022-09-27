@@ -1,7 +1,12 @@
+use std::sync::Arc;
+
+use async_trait::async_trait;
 use chrono::NaiveDateTime;
 use serde::Deserialize;
 
-use super::{id::Key, event::{PlayoffLevel, EventKey}, team::TeamKey};
+use crate::{ctx::{Context, endpoints::EndPoint}, Error};
+
+use super::{id::{Key, KeyReferenced}, event::{PlayoffLevel, EventKey}, team::TeamKey};
 
 
 pub type MatchKey = Key<Match>;
@@ -58,6 +63,18 @@ pub struct MatchAlliance {
     pub team_keys: Vec<TeamKey>,
     pub surrogate_team_keys: Vec<TeamKey>,
     pub dq_team_keys: Vec<TeamKey>,
+}
+
+#[async_trait]
+impl KeyReferenced for Match {
+    async fn dereference(key: Key<Self>, ctx: &Context) -> Result<Arc<Self>, Error> {
+        ctx
+            .endpoints
+            .matches
+            .matches
+            .get((key,), ctx)
+            .await
+    }
 }
 
 impl<'de> Deserialize<'de> for MatchWinner {

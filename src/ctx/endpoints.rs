@@ -3,7 +3,7 @@ use moka::sync::Cache;
 use once_cell::sync::Lazy;
 use reqwest::{RequestBuilder, Request, Method, Url, header::{IF_NONE_MATCH, ETAG}, StatusCode};
 use serde::{Deserialize, de::DeserializeOwned};
-use crate::{Error, model::{team::{Team, SimpleTeam, TeamKey}, Year, event::{EventKey, TeamEventStatus, Event, EliminationAlliance, EventOPRs, EventDistrictPoints}}};
+use crate::{Error, model::{team::{Team, SimpleTeam, TeamKey}, Year, event::{EventKey, TeamEventStatus, Event, EliminationAlliance, EventOPRs, EventDistrictPoints}, matches::{Match, MatchKey}}};
 use std::{sync::{Arc, Weak}, collections::HashMap};
 use async_trait::async_trait;
 
@@ -35,6 +35,7 @@ pub struct EndPoints {
     pub teams: TeamsEndPoint,
     pub team: TeamEndPoint,
     pub event: EventEndPoint,
+    pub matches: MatchEndPoint,
 }
 
 /// Structure representing requests made to the /teams endpoint
@@ -66,6 +67,28 @@ pub struct TeamEndPoint {
 pub struct EventEndPoint {
     /// Represents the /event/{event_key} endpoint
     pub(crate) event: EventEP, 
+    /// Represents the /event/{event_key}/simple endpoint
+    pub(crate) simple: SimpleEventEP,
+    /// Represents the /event/{event_key}/alliances endpoint
+    pub(crate) alliances: EliminationAlliancesEP,
+    /// Represents the /event/{event_key}/oprs endpoint
+    pub(crate) oprs: EventOPRsEP,
+    /// Represents the /event/{event_key}/district_points endpoint
+    pub(crate) district_points: EventDistrictPointsEP,
+    /// Represents the /event/{event_key}/teams/keys endpoint
+    pub(crate) team_keys: EventTeamKeysEP,
+    /// Represents the /event/{event_key}/teams/statuses endpoint
+    pub(crate) team_statuses: EventTeamStatusesEP,
+    /// Represents the /event/{event_key}/matches
+    pub(crate) matches: EventMatchesEP,
+    /// Represents the /event/{event_key}/matches/keys
+    pub(crate) match_keys: EventMatchKeysEP,
+}
+
+#[derive(Default)]
+pub struct MatchEndPoint {
+    /// Represents the /match/{match_key} endpoint
+    pub(crate) matches: MatchEP,
 }
 
 macro_rules! endpoint {
@@ -116,7 +139,12 @@ endpoint!{EliminationAlliancesEP: (EventKey) => Arc<Vec<EliminationAlliance>> wh
 endpoint!{EventOPRsEP: (EventKey) => Arc<EventOPRs> where (event_key) "event/{event_key}/oprs"}
 endpoint!{EventDistrictPointsEP: (EventKey) => Arc<EventDistrictPoints> where (event_key) "event/{event_key}/district_points"}
 endpoint!{EventTeamKeysEP: (EventKey) => Arc<Vec<TeamKey>> where (event_key) "event/{event_key}/teams/keys"}
-endpoint!{EventTeamsStatusesEP: (EventKey) => Arc<HashMap<EventKey, TeamEventStatus>> where (event_key) "event/{event_key}/teams/statuses"}
+endpoint!{EventTeamStatusesEP: (EventKey) => Arc<HashMap<EventKey, TeamEventStatus>> where (event_key) "event/{event_key}/teams/statuses"}
+endpoint!{EventMatchesEP: (EventKey) => Arc<Vec<Match>> where (event_key) "event/{event_key}/matches"}
+endpoint!{EventMatchKeysEP: (EventKey) => Arc<Vec<MatchKey>> where (event_key) "event/{event_key}/matches/keys"}
+
+endpoint!{MatchEP: (MatchKey) => Arc<Match> where (match_key) "match/{match_key}"}
+
 
 /// Get the given path from the given endpoint, utilizing the cache
 async fn get_ep<T: EndPoint + 'static>(
