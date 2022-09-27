@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::{sync::Arc, collections::HashMap};
 
 use crate::{ctx::{Context, endpoints::EndPoint}, Error};
 
 use super::{id::{Key, KeyReferenced}, Year, team::TeamKey};
 use async_trait::async_trait;
-use chrono::{Date, NaiveDate};
+use chrono::NaiveDate;
 use reqwest::Url;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
@@ -71,6 +71,11 @@ pub struct Event {
     pub website: Option<Url>,
     pub first_event_id: Option<String>,
     pub first_event_code: Option<String>,
+    pub webcasts: Vec<WebCast>,
+    pub division_keys: Vec<EventKey>,
+    pub parent_event_key: String,
+    pub playoff_type: Option<PlayoffType>,
+    pub playoff_type_string: Option<String>,
 
 }
 
@@ -157,7 +162,6 @@ pub struct TeamEventStatusPlayoff {
     pub status: String,
 }
 
-
 #[derive(Clone,Debug,Deserialize)]
 pub struct TeamEventStatusRank {
     pub num_teams: Option<u16>,
@@ -195,6 +199,50 @@ pub struct WLTRecord {
 pub struct TeamEventStatus {
     pub qual: TeamEventStatusRank,
     pub alliance: TeamEventStatusAlliance,
+}
+
+#[derive(Clone,Debug,Deserialize)]
+pub struct EliminationAlliance {
+    pub name: Option<String>,
+    pub backup: Option<TeamEventStatusAllianceBackup>,
+    pub declined: Vec<TeamKey>,
+    pub picks: Vec<TeamKey>,
+    pub status: EliminationAllianceStatus,
+}
+
+#[derive(Clone,Debug,Deserialize)]
+pub struct EventOPRs {
+    pub oprs: HashMap<TeamKey, f64>,
+    pub dprs: HashMap<TeamKey, f64>,
+    pub ccwms: HashMap<TeamKey, f64>,
+}
+
+#[derive(Clone,Debug,Deserialize)]
+pub struct EliminationAllianceStatus {
+    pub playoff_average: f64,
+    #[serde(flatten)]
+    pub team_event: TeamEventStatusPlayoff,
+}
+
+#[derive(Clone,Debug,Deserialize)]
+pub struct EventDistrictPoints {
+    pub points: HashMap<TeamKey, EventDistrictPoints>,
+    pub tiebreakers: HashMap<TeamKey, EventDistrictPointsTiebreaker>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct EventDistrictPointsPoints {
+    pub total: i32,
+    pub alliance_points: i32,
+    pub elim_points: i32,
+    pub award_points: i32,
+    pub qual_points: i32,
+}
+
+#[derive(Clone,Debug,Deserialize)]
+pub struct EventDistrictPointsTiebreaker {
+    pub highest_qual_scores: Vec<i32>,
+    pub qual_wins: u32,
 }
 
 impl AsRef<SimpleEvent> for Event {

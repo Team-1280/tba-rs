@@ -3,7 +3,7 @@ use moka::sync::Cache;
 use once_cell::sync::Lazy;
 use reqwest::{RequestBuilder, Request, Method, Url, header::{IF_NONE_MATCH, ETAG}, StatusCode};
 use serde::{Deserialize, de::DeserializeOwned};
-use crate::{Error, model::{team::{Team, SimpleTeam, TeamKey}, Year, event::{EventKey, TeamEventStatus, Event}}};
+use crate::{Error, model::{team::{Team, SimpleTeam, TeamKey}, Year, event::{EventKey, TeamEventStatus, Event, EliminationAlliance, EventOPRs, EventDistrictPoints}}};
 use std::{sync::{Arc, Weak}, collections::HashMap};
 use async_trait::async_trait;
 
@@ -109,8 +109,14 @@ endpoint!{
     TeamEP: (TeamKey) => Arc<Team>
     where (team_key) "team/{team_key}"
 }
-endpoint!{EventEP: (EventKey) => Arc<Event> where (event_key) "event/{event_key}"}
 
+endpoint!{EventEP: (EventKey) => Arc<Event> where (event_key) "event/{event_key}"}
+endpoint!{SimpleEventEP: (EventKey) => Arc<Event> where (event_key) "event/{event_key}/simple"}
+endpoint!{EliminationAlliancesEP: (EventKey) => Arc<Vec<EliminationAlliance>> where (event_key) "event/{event_key}/alliances"}
+endpoint!{EventOPRsEP: (EventKey) => Arc<EventOPRs> where (event_key) "event/{event_key}/oprs"}
+endpoint!{EventDistrictPointsEP: (EventKey) => Arc<EventDistrictPoints> where (event_key) "event/{event_key}/district_points"}
+endpoint!{EventTeamKeysEP: (EventKey) => Arc<Vec<TeamKey>> where (event_key) "event/{event_key}/teams/keys"}
+endpoint!{EventTeamsStatusesEP: (EventKey) => Arc<HashMap<EventKey, TeamEventStatus>> where (event_key) "event/{event_key}/teams/statuses"}
 
 /// Get the given path from the given endpoint, utilizing the cache
 async fn get_ep<T: EndPoint + 'static>(
