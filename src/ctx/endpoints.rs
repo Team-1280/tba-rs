@@ -9,7 +9,7 @@ use async_trait::async_trait;
 
 use super::Context;
 
-static BASE_ENDPOINT: Lazy<Url> = Lazy::new(|| Url::parse("http://https://www.thebluealliance.com/api/v3").unwrap());
+static BASE_ENDPOINT: Lazy<Url> = Lazy::new(|| Url::parse("http://www.thebluealliance.com/api/v3/").unwrap());
 
 /// Trait implemented by all structures that represent endpoints of the TBA API with methods to
 /// make requests using given parameters

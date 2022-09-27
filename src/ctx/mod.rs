@@ -25,7 +25,9 @@ impl Context {
             "X-TBA-Auth-Key",
             tba_auth_key
                 .as_ref()
-                .parse()?
+                .trim()
+                .parse()
+                .unwrap()
         );
 
         Ok(Context {

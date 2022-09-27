@@ -38,7 +38,7 @@ pub struct Team {
     pub website: Option<Url>,
     pub rookie_year: Option<Year>,
     pub motto: Option<String>,
-    pub home_championship: HomeChampionshipsList,
+    pub home_championship: Option<HomeChampionshipsList>,
 }
 
 /// A newtype containing a map of year numbers to the location of a home championship
