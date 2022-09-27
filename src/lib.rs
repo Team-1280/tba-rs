@@ -6,6 +6,8 @@ pub use error::Error;
 
 #[cfg(test)]
 mod test {
+    use std::sync::Arc;
+
     use crate::{model::{Year, team::{Team, SimpleTeam}, id::KeyReferenced}, ctx::{Context, endpoints::EndPoint}};
 
     use super::*;
@@ -26,6 +28,8 @@ mod test {
             .unwrap();
         for key in teams.iter().take(5) {
             let team = Team::dereference(key.clone(), &ctx).await.unwrap();
+            let team2 = Team::dereference(key.clone(), &ctx).await.unwrap();
+            assert!(Arc::ptr_eq(&team, &team2));
         }
     }
 }
