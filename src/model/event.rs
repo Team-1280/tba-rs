@@ -1,15 +1,20 @@
-use std::{sync::Arc, collections::HashMap};
+use std::collections::HashMap;
 
-use crate::{ctx::{Context, endpoints::EndPoint}, Error};
+use crate::{ctx::endpoints::EndPoint, key};
 
-use super::{id::{Key, KeyReferenced}, Year, team::TeamKey};
-use async_trait::async_trait;
+use super::{Year, team::TeamKey};
 use chrono::NaiveDate;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
 use url::Url;
 
-pub type EventKey = Key<Event>;
+key!(EventKey(String) -> Event => (self, ctx) with ctx
+            .endpoints
+            .event
+            .event
+            .get((self,), ctx)
+            .await
+);
 
 #[derive(Clone, Copy, Deserialize_repr, Debug)]
 #[repr(i8)]
@@ -256,17 +261,6 @@ impl AsMut<SimpleEvent> for Event {
     }
 }
 
-#[async_trait(?Send)]
-impl KeyReferenced for Event {
-    async fn dereference(key: Key<Self>, ctx: &Context) -> Result<Arc<Self>, Error> {
-        ctx
-            .endpoints
-            .event
-            .event
-            .get((key,), ctx)
-            .await
-    }
-}
 
 impl<'de> Deserialize<'de> for WebCastType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::sync::Arc;
 use async_trait::async_trait;
 use serde::Deserialize;
 use crate::{ctx::Context, Error};
@@ -8,17 +8,37 @@ use crate::{ctx::Context, Error};
 #[serde(transparent)]
 pub struct TeamNumber(u32);
 
-/// Trait required by all types that are referenced by [Key]s in the TBA API, with a single method
-/// to upgrade the key into the object it references
+/// Trait implemented by all key references in the TBA API, with method to upgrade the reference
+/// into a concrete value
 #[async_trait(?Send)]
-pub trait KeyReferenced: Sized {
-    async fn dereference(key: Key<Self>, ctx: &Context) -> Result<Arc<Self>, Error>;
+pub trait Key: Sized {
+    type Referenced;
+    
+    async fn upgrade(self, ctx: &Context) -> Result<Arc<Self::Referenced>, Error>;
 }
 
-/// A key that references an element of type [T]
-pub struct Key<T> {
-    key: String,
-    boo: PhantomData<T>,
+#[macro_export]
+macro_rules! key {
+    ($name:ident($internal:ty) -> $referenced:ty => ($this:ident, $ctxi:ident) with $ep:expr) => {
+        #[derive(Clone, Debug, PartialEq, Eq, Hash, ::serde::Deserialize)]
+        #[serde(transparent)]
+        #[repr(transparent)]
+        pub struct $name($internal);
+        
+        #[::async_trait::async_trait(?Send)]
+        impl crate::model::id::Key for $name {
+            type Referenced = $referenced;
+            async fn upgrade($this: Self, $ctxi: &crate::ctx::Context) -> Result<::std::sync::Arc<Self::Referenced>, crate::Error> {
+                $ep
+            }
+        }
+
+        impl ::std::fmt::Display for $name {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                self.0.fmt(f)
+            }
+        }
+    };
 }
 
 impl TeamNumber {
@@ -36,46 +56,6 @@ impl TeamNumber {
 impl AsRef<u32> for TeamNumber {
     fn as_ref(&self) -> &u32 {
         &self.0
-    }
-}
-
-impl<T> Clone for Key<T> {
-    fn clone(&self) -> Self {
-        Self { key: self.key.clone(), boo: PhantomData }
-    }
-}
-impl<T> std::fmt::Debug for Key<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.key.fmt(f)
-    }
-}
-impl<T> std::fmt::Display for Key<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.key.fmt(f)
-    }
-}
-
-impl<T> std::cmp::PartialEq for Key<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.key.eq(&other.key)
-    }
-}
-impl<T> std::cmp::Eq for Key<T> {}
-impl<T> std::hash::Hash for Key<T> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.key.hash(state)
-    }
-}
-
-impl<'de, T> Deserialize<'de> for Key<T> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de> {
-
-        Ok(Self {
-            key: String::deserialize(deserializer)?,
-            boo: PhantomData,
-        }) 
     }
 }
 

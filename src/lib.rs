@@ -8,7 +8,7 @@ pub use error::Error;
 mod test {
     use std::sync::Arc;
 
-    use crate::{model::{Year, team::Team, id::KeyReferenced}, ctx::{Context, endpoints::EndPoint}};
+    use crate::{model::{Year, team::Team, id::Key}, ctx::{Context, endpoints::EndPoint}};
 
     use super::*;
 
@@ -27,8 +27,8 @@ mod test {
             .await
             .unwrap();
         for key in teams.iter().take(5) {
-            let team = Team::dereference(key.clone(), &ctx).await.unwrap();
-            let team2 = Team::dereference(key.clone(), &ctx).await.unwrap();
+            let team = key.clone().upgrade(&ctx).await.unwrap();
+            let team2 = key.upgrade(&ctx).await.unwrap();
             assert!(Arc::ptr_eq(&team, &team2));
         }
     }

@@ -1,14 +1,20 @@
-use std::sync::Arc;
-
 use serde::Deserialize;
-use async_trait::async_trait;
 use url::Url;
-use crate::ctx::endpoints::EndPoint;
+use crate::{ctx::endpoints::EndPoint, key};
 
-use super::{id::{TeamNumber, Key, KeyReferenced}, Year};
+use super::{id::TeamNumber, Year};
 
-pub type TeamKey = Key<Team>;
-pub type RobotKey = Key<TeamRobot>;
+key!(TeamKey(String) -> Team => (self, ctx) with ctx
+            .endpoints
+            .team 
+            .team
+            .get((self,), ctx)
+            .await
+);
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(transparent)]
+pub struct RobotKey(String);
 
 /// Structure representing basic data about an FRC team, that can be upgraded using a
 /// [Context](crate::ctx::Context)
@@ -57,17 +63,6 @@ pub struct TeamRobot {
     pub team_key: TeamKey,
 }
 
-#[async_trait(?Send)]
-impl KeyReferenced for Team {
-    async fn dereference(key: Key<Self>, ctx: &crate::ctx::Context) -> Result<Arc<Self>, crate::Error> {
-        ctx
-            .endpoints
-            .team 
-            .team
-            .get((key,), ctx)
-            .await
-    } 
-}
 
 impl AsRef<SimpleTeam> for Team {
     fn as_ref(&self) -> &SimpleTeam {
