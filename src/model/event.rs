@@ -257,7 +257,7 @@ impl AsMut<SimpleEvent> for Event {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl KeyReferenced for Event {
     async fn dereference(key: Key<Self>, ctx: &Context) -> Result<Arc<Self>, Error> {
         ctx

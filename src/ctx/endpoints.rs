@@ -94,14 +94,14 @@ pub struct MatchEndPoint {
 
 macro_rules! endpoint {
     ($name:ident: ($($params:ty),+) => $val:ty where ($($names:ident),+) $path:literal) => {
-        pub struct $name { cache: Cache<($($params),+,), EndPointCacheEntry<$val>> }
+        pub struct $name { cache: Cache<($($params),+,), EndPointCacheEntry<::std::sync::Arc<$val>>> }
         #[async_trait(?Send)]
         impl self::EndPoint for $name {
             type Params = ($($params),+,);
-            type Value = $val;
+            type Value = ::std::sync::Arc<$val>;
             async fn get(&self, params: ($($params),+,), ctx: &Context) -> ::std::result::Result<Self::Value, Error> {
                 let ($(ref $names),+,) = params;
-                let path = ::std::format_args!($path);
+                let path = ::std::format!($path, BASE_ENDPOINT);
                 get_ep::<Self>(
                     path,
                     params,
@@ -119,37 +119,37 @@ macro_rules! endpoint {
     };
 }
 
-endpoint!{TeamPageEP: (usize) => Arc<Vec<Team>> where (page_num) "teams/{page_num}"}
-endpoint!{SimpleTeamPageEP: (usize) => Arc<Vec<SimpleTeam>> where (page_num) "teams/{page_num}/simple"}
-endpoint!{KeysTeamPageEP: (usize) => Arc<Vec<TeamKey>> where (page_num) "teams/{page_num}/keys"}
-endpoint!{TeamPageByYearEP: (Year, usize) => Arc<Vec<Team>> where (year, page_num) "teams/{year}/{page_num}"}
-endpoint!{SimpleTeamPageByYearEP: (Year, usize) => Arc<Vec<SimpleTeam>> where (year, page_num) "teams/{year}/{page_num}/simple"}
-endpoint!{KeysTeamPageByYearEP: (Year, usize) => Arc<Vec<TeamKey>> where (year, page_num) "teams/{year}/{page_num}/keys"}
+endpoint!{TeamPageEP: (usize) => Vec<Team> where (page_num) "{}/teams/{page_num}"}
+endpoint!{SimpleTeamPageEP: (usize) => Vec<SimpleTeam> where (page_num) "{}/teams/{page_num}/simple"}
+endpoint!{KeysTeamPageEP: (usize) => Vec<TeamKey> where (page_num) "{}/teams/{page_num}/keys"}
+endpoint!{TeamPageByYearEP: (Year, usize) => Vec<Team> where (year, page_num) "{}/teams/{year}/{page_num}"}
+endpoint!{SimpleTeamPageByYearEP: (Year, usize) => Vec<SimpleTeam> where (year, page_num) "{}/teams/{year}/{page_num}/simple"}
+endpoint!{KeysTeamPageByYearEP: (Year, usize) => Vec<TeamKey> where (year, page_num) "{}/teams/{year}/{page_num}/keys"}
 endpoint!{
-    EventStatusByYearEP: (TeamKey, Year) => Arc<HashMap<EventKey, TeamEventStatus>>
-    where (team_key, year) "team/{team_key}/events/{year}/statuses"
+    EventStatusByYearEP: (TeamKey, Year) => HashMap<EventKey, TeamEventStatus>
+    where (team_key, year) "{}/team/{team_key}/events/{year}/statuses"
 }
 endpoint!{
-    TeamEP: (TeamKey) => Arc<Team>
-    where (team_key) "team/{team_key}"
+    TeamEP: (TeamKey) => Team
+    where (team_key) "{}/team/{team_key}"
 }
 
-endpoint!{EventEP: (EventKey) => Arc<Event> where (event_key) "event/{event_key}"}
-endpoint!{SimpleEventEP: (EventKey) => Arc<Event> where (event_key) "event/{event_key}/simple"}
-endpoint!{EliminationAlliancesEP: (EventKey) => Arc<Vec<EliminationAlliance>> where (event_key) "event/{event_key}/alliances"}
-endpoint!{EventOPRsEP: (EventKey) => Arc<EventOPRs> where (event_key) "event/{event_key}/oprs"}
-endpoint!{EventDistrictPointsEP: (EventKey) => Arc<EventDistrictPoints> where (event_key) "event/{event_key}/district_points"}
-endpoint!{EventTeamKeysEP: (EventKey) => Arc<Vec<TeamKey>> where (event_key) "event/{event_key}/teams/keys"}
-endpoint!{EventTeamStatusesEP: (EventKey) => Arc<HashMap<EventKey, TeamEventStatus>> where (event_key) "event/{event_key}/teams/statuses"}
-endpoint!{EventMatchesEP: (EventKey) => Arc<Vec<Match>> where (event_key) "event/{event_key}/matches"}
-endpoint!{EventMatchKeysEP: (EventKey) => Arc<Vec<MatchKey>> where (event_key) "event/{event_key}/matches/keys"}
+endpoint!{EventEP: (EventKey) => Event where (event_key) "{}/event/{event_key}"}
+endpoint!{SimpleEventEP: (EventKey) => Event where (event_key) "{}/event/{event_key}/simple"}
+endpoint!{EliminationAlliancesEP: (EventKey) => Vec<EliminationAlliance> where (event_key) "{}/event/{event_key}/alliances"}
+endpoint!{EventOPRsEP: (EventKey) => EventOPRs where (event_key) "{}/event/{event_key}/oprs"}
+endpoint!{EventDistrictPointsEP: (EventKey) => EventDistrictPoints where (event_key) "{}/event/{event_key}/district_points"}
+endpoint!{EventTeamKeysEP: (EventKey) => Vec<TeamKey> where (event_key) "{}/event/{event_key}/teams/keys"}
+endpoint!{EventTeamStatusesEP: (EventKey) => HashMap<EventKey, TeamEventStatus> where (event_key) "{}/event/{event_key}/teams/statuses"}
+endpoint!{EventMatchesEP: (EventKey) => Vec<Match> where (event_key) "{}/event/{event_key}/matches"}
+endpoint!{EventMatchKeysEP: (EventKey) => Vec<MatchKey> where (event_key) "{}/event/{event_key}/matches/keys"}
 
-endpoint!{MatchEP: (MatchKey) => Arc<Match> where (match_key) "match/{match_key}"}
+endpoint!{MatchEP: (MatchKey) => Match where (match_key) "{}/match/{match_key}"}
 
 
 /// Get the given path from the given endpoint, utilizing the cache
 async fn get_ep<T: EndPoint + 'static>(
-    path: std::fmt::Arguments<'_>,
+    path: String,
     params: T::Params,
     cache: &Cache<T::Params, EndPointCacheEntry<T::Value>>,
     ctx: &Context,
@@ -162,7 +162,7 @@ where
         .client
         .request(
             Method::GET,
-            format!("{}{}", BASE_ENDPOINT, path),
+            path,
         );
 
     if let Some(ref cached) = cached {

@@ -65,7 +65,7 @@ pub struct MatchAlliance {
     pub dq_team_keys: Vec<TeamKey>,
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl KeyReferenced for Match {
     async fn dereference(key: Key<Self>, ctx: &Context) -> Result<Arc<Self>, Error> {
         ctx

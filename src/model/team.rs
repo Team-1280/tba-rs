@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use serde::Deserialize;
 use async_trait::async_trait;
+use url::Url;
 use crate::ctx::endpoints::EndPoint;
 
 use super::{id::{TeamNumber, Key, KeyReferenced}, Year};
@@ -56,7 +57,7 @@ pub struct TeamRobot {
     pub team_key: TeamKey,
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl KeyReferenced for Team {
     async fn dereference(key: Key<Self>, ctx: &crate::ctx::Context) -> Result<Arc<Self>, crate::Error> {
         ctx
