@@ -8,7 +8,7 @@ pub use error::Error;
 mod test {
     use std::sync::Arc;
 
-    use crate::{model::{Year, team::{Team, SimpleTeam}, id::KeyReferenced}, ctx::{Context, endpoints::EndPoint}};
+    use crate::{model::{Year, team::Team, id::KeyReferenced}, ctx::{Context, endpoints::EndPoint}};
 
     use super::*;
 

@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use reqwest::Url;
 use serde::Deserialize;
 use async_trait::async_trait;
 use crate::ctx::endpoints::EndPoint;

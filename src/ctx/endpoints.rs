@@ -1,19 +1,20 @@
 
+use awc::http::{Method, header::{IF_NONE_MATCH, ETAG}, StatusCode};
 use moka::sync::Cache;
-use once_cell::sync::Lazy;
-use reqwest::{RequestBuilder, Request, Method, Url, header::{IF_NONE_MATCH, ETAG}, StatusCode};
-use serde::{Deserialize, de::DeserializeOwned};
+
+use serde::de::DeserializeOwned;
+
 use crate::{Error, model::{team::{Team, SimpleTeam, TeamKey}, Year, event::{EventKey, TeamEventStatus, Event, EliminationAlliance, EventOPRs, EventDistrictPoints}, matches::{Match, MatchKey}}};
-use std::{sync::{Arc, Weak}, collections::HashMap};
+use std::{sync::Arc, collections::HashMap};
 use async_trait::async_trait;
 
 use super::Context;
 
-static BASE_ENDPOINT: Lazy<Url> = Lazy::new(|| Url::parse("http://www.thebluealliance.com/api/v3/").unwrap());
+const BASE_ENDPOINT: &str = "http://www.thebluealliance.com/api/v3/";
 
 /// Trait implemented by all structures that represent endpoints of the TBA API with methods to
 /// make requests using given parameters
-#[async_trait]
+#[async_trait(?Send)]
 pub trait EndPoint: Sized {
     type Params;
     type Value;
@@ -94,13 +95,13 @@ pub struct MatchEndPoint {
 macro_rules! endpoint {
     ($name:ident: ($($params:ty),+) => $val:ty where ($($names:ident),+) $path:literal) => {
         pub struct $name { cache: Cache<($($params),+,), EndPointCacheEntry<$val>> }
-        #[async_trait]
+        #[async_trait(?Send)]
         impl self::EndPoint for $name {
             type Params = ($($params),+,);
             type Value = $val;
             async fn get(&self, params: ($($params),+,), ctx: &Context) -> ::std::result::Result<Self::Value, Error> {
                 let ($(ref $names),+,) = params;
-                let path = ::std::format!($path);
+                let path = ::std::format_args!($path);
                 get_ep::<Self>(
                     path,
                     params,
@@ -148,7 +149,7 @@ endpoint!{MatchEP: (MatchKey) => Arc<Match> where (match_key) "match/{match_key}
 
 /// Get the given path from the given endpoint, utilizing the cache
 async fn get_ep<T: EndPoint + 'static>(
-    path: String,
+    path: std::fmt::Arguments<'_>,
     params: T::Params,
     cache: &Cache<T::Params, EndPointCacheEntry<T::Value>>,
     ctx: &Context,
@@ -161,17 +162,24 @@ where
         .client
         .request(
             Method::GET,
-            BASE_ENDPOINT.join(&path)?
+            format!("{}{}", BASE_ENDPOINT, path),
         );
+
     if let Some(ref cached) = cached {
-        request = request.header(IF_NONE_MATCH, cached.etag.clone());
+        request = request.insert_header((IF_NONE_MATCH, cached.etag.clone()));
     }
     
-    let response = request.send().await?;
+    let mut response = request.send().await?;
     match (response.status(), cached) {
         (StatusCode::NOT_MODIFIED, Some(cached)) => Ok(cached.val),
         (code, _) if code.is_success() => {
-            let etag = response.headers().get(ETAG).map(|v| v.to_str().map(str::to_owned));
+            let etag = response
+                .headers()
+                .get(ETAG)
+                .map(|v| v
+                    .to_str()
+                    .map(str::to_owned)
+                );
             let val = response.json::<T::Value>().await?;
             if let Some(etag) = etag {
                 cache.insert(
