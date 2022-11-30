@@ -5,7 +5,7 @@ use moka::sync::Cache;
 use serde::de::DeserializeOwned;
 
 use crate::{Error, model::{team::{Team, SimpleTeam, TeamKey}, Year, event::{EventKey, TeamEventStatus, Event, EliminationAlliance, EventOPRs, EventDistrictPoints}, matches::{Match, MatchKey}}};
-use std::{sync::Arc, collections::HashMap};
+use std::collections::HashMap;
 use async_trait::async_trait;
 
 use super::Context;
@@ -43,53 +43,53 @@ pub struct EndPoints {
 #[derive(Default)]
 pub struct TeamsEndPoint {
     /// Representing the /teams/{page_num} endpoint
-    pub(crate) full_page: TeamPageEP,
+    pub full_page: TeamPageEP,
     /// Represents the /teams/{page_num}/simple endpoint
-    pub(crate) simple_page: SimpleTeamPageEP,
+    pub simple_page: SimpleTeamPageEP,
     /// Represents /teams/{page_num}/keys
-    pub(crate) key_page: KeysTeamPageEP,
+    pub key_page: KeysTeamPageEP,
     /// Represents /teams/{year}/{page_num}
-    pub(crate) team_by_year: TeamPageByYearEP,
+    pub team_by_year: TeamPageByYearEP,
     /// Represents /teams/{year}/{page_num}/simple
-    pub(crate) simple_team_by_year: SimpleTeamPageEP,
+    pub simple_team_by_year: SimpleTeamPageEP,
     /// Represents /teams/{year}/{page_num}/keys
-    pub(crate) keys_by_year: KeysTeamPageByYearEP,
+    pub keys_by_year: KeysTeamPageByYearEP,
 }
 
 /// Container with all /team/ endpoints
 #[derive(Default)]
 pub struct TeamEndPoint {
     /// Represents /team/{team_key}
-    pub(crate) team: TeamEP,
+    pub team: TeamEP,
 }
 
 /// Container with all /event/ endpoints modelled
 #[derive(Default)]
 pub struct EventEndPoint {
     /// Represents the /event/{event_key} endpoint
-    pub(crate) event: EventEP, 
+    pub event: EventEP, 
     /// Represents the /event/{event_key}/simple endpoint
-    pub(crate) simple: SimpleEventEP,
+    pub simple: SimpleEventEP,
     /// Represents the /event/{event_key}/alliances endpoint
-    pub(crate) alliances: EliminationAlliancesEP,
+    pub alliances: EliminationAlliancesEP,
     /// Represents the /event/{event_key}/oprs endpoint
-    pub(crate) oprs: EventOPRsEP,
+    pub oprs: EventOPRsEP,
     /// Represents the /event/{event_key}/district_points endpoint
-    pub(crate) district_points: EventDistrictPointsEP,
+    pub district_points: EventDistrictPointsEP,
     /// Represents the /event/{event_key}/teams/keys endpoint
-    pub(crate) team_keys: EventTeamKeysEP,
+    pub team_keys: EventTeamKeysEP,
     /// Represents the /event/{event_key}/teams/statuses endpoint
-    pub(crate) team_statuses: EventTeamStatusesEP,
+    pub team_statuses: EventTeamStatusesEP,
     /// Represents the /event/{event_key}/matches
-    pub(crate) matches: EventMatchesEP,
+    pub matches: EventMatchesEP,
     /// Represents the /event/{event_key}/matches/keys
-    pub(crate) match_keys: EventMatchKeysEP,
+    pub match_keys: EventMatchKeysEP,
 }
 
 #[derive(Default)]
 pub struct MatchEndPoint {
     /// Represents the /match/{match_key} endpoint
-    pub(crate) matches: MatchEP,
+    pub matches: MatchEP,
 }
 
 macro_rules! endpoint {

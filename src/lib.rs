@@ -14,10 +14,6 @@ mod test {
 
     #[tokio::test]
     async fn event_test() {
-        let a = 6;
-        let b = 3;
-        let c = a;
-        
         let ctx = Context::authenticate(
             std::fs::read_to_string("token.txt")
                 .unwrap()

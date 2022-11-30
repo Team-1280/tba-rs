@@ -4,7 +4,6 @@ use crate::{ctx::{Context, endpoints::EndPoint}, Error};
 
 use super::{id::{Key, KeyReferenced}, Year, team::TeamKey};
 use async_trait::async_trait;
-use awc::http::Uri;
 use chrono::NaiveDate;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;

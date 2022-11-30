@@ -13,7 +13,7 @@ use self::endpoints::EndPoints;
 /// internet
 pub struct Context {
     pub(crate) client: Arc<Client>,
-    pub(crate) endpoints: EndPoints,
+    pub endpoints: EndPoints,
 }
 
 impl Context {
